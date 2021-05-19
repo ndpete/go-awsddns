@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -27,10 +29,14 @@ func main() {
 	domain := flag.String("domain", "", "domain name to update ending with . ie test.example.com. ")
 	flag.Parse()
 	if *zoneID == "" {
-		log.Fatal("Must specifiy zoneid")
+		fmt.Println("Must specifiy zoneid")
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 	if *domain == "" {
-		log.Fatal("Must specifiy domain")
+		fmt.Println("Must specifiy domain")
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -45,7 +51,9 @@ func main() {
 		client:     client,
 	}
 
-	ddnsService.checkRecordSet()
+	if ddnsService.checkRecordSet() {
+		ddnsService.updateRecordSet()
+	}
 	log.Printf("Finished")
 
 }
@@ -72,7 +80,7 @@ func checkIPAddress(ip string) string {
 	}
 }
 
-func (d *DDNSService) checkRecordSet() {
+func (d *DDNSService) checkRecordSet() bool {
 	log.Printf("Checking Current Record Set")
 	params := &route53.ListResourceRecordSetsInput{
 		HostedZoneId: &d.ZoneID,
@@ -87,13 +95,12 @@ func (d *DDNSService) checkRecordSet() {
 			for _, r := range record.ResourceRecords {
 				if aws.ToString(r.Value) != d.IP {
 					log.Printf("IP doesn't match on record: %s", aws.ToString(r.Value))
-					d.updateRecordSet()
-				} else {
-					log.Printf("IP matches, Exiting...")
+					return true
 				}
 			}
 		}
 	}
+	return false
 }
 
 func (d *DDNSService) updateRecordSet() {
