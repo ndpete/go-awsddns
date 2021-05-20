@@ -98,6 +98,9 @@ func (d *DDNSService) checkRecordSet() bool {
 					return true
 				}
 			}
+		} else {
+			log.Printf("Record not found")
+			return true
 		}
 	}
 	return false
