@@ -96,14 +96,15 @@ func (d *DDNSService) checkRecordSet() bool {
 				if aws.ToString(r.Value) != d.IP {
 					log.Printf("IP doesn't match on record: %s", aws.ToString(r.Value))
 					return true
+				} else {
+					log.Printf("IP address matches. Skipping")
+					return false
 				}
 			}
-		} else {
-			log.Printf("Record not found")
-			return true
 		}
 	}
-	return false
+	log.Printf("Record Not found")
+	return true
 }
 
 func (d *DDNSService) updateRecordSet() {
